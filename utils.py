@@ -22,7 +22,12 @@ class Processor:
 		data['attackType'] = data['class'].map(attack_type_mapping)
 		data = data.drop(['unknown'], axis = 1)
 		data = data.drop(['class'], axis = 1)
-		return data
+
+		attackType_list = data['attackType'].unique().tolist()
+		attack_type_mapping = dict(zip(attackType_list, range(0, len(attackType_list))))
+		data['attack_type'] = data['attackType'].map(attack_type_mapping).astype(int)
+		data = data.drop(['attackType'], axis = 1)
+		return data, attackType_list
 
 	@staticmethod
 	def process(data, start, end):
@@ -53,5 +58,6 @@ class Processor:
 		mu = data.select_dtypes(['float64', 'int64']).mean(axis=0)
 		sigma = data.select_dtypes(['float64', 'int64']).std(axis=0)
 		for column in data.select_dtypes(['float64', 'int64']).columns:
-			data[column] = ( data[column] - mu[column] ) / sigma[column]
+			if sigma[column] != 0:
+				data[column] = ( data[column] - mu[column] ) / sigma[column]
 		return data
