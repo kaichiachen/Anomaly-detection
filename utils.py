@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
 
 class Processor:
 
@@ -37,23 +40,6 @@ class Processor:
 		return X, y
 
 	@staticmethod
-	def compareClfs(clfs, trainX, trainY, testX, testY):
-		# clfs is a dictionary of classifiers
-		result = {}; bestErr = 1; bestName = ''
-		for name,clf in clfs.iteritems():
-			try:
-				predictY = clf.best_estimator_.fit(trainX, trainY).predict(testX)
-			except:
-				predictY = clf.fit(trainX, trainY).predict(testX)
-			result[name] = 1-np.mean(predictY==testY)
-			print name,':',result[name]
-			if result[name] < bestErr:
-				bestErr = result[name]
-				bestName = name
-		print "Best classifier",bestName,':',bestErr
-		return result
-
-	@staticmethod
 	def normalize(data):
 		mu = data.select_dtypes(['float64', 'int64']).mean(axis=0)
 		sigma = data.select_dtypes(['float64', 'int64']).std(axis=0)
@@ -61,3 +47,31 @@ class Processor:
 			if sigma[column] != 0:
 				data[column] = ( data[column] - mu[column] ) / sigma[column]
 		return data
+
+class EnsembleClassifier:
+	def __init__(self, clfs=None):
+		self.clfs = clfs;
+
+	def fit(self, train_X, train_y):
+		for clf in self.clfs:
+			clf.fit(train_X, train_y)
+		return self
+
+	def predict(self, test_X):
+		self.predictions_ = list()
+		for clf in self.clfs:
+			try:
+				self.predictions_.append(clf.best_estimator_.predict(test_X))
+			except:
+				self.predictions_.append(clf.predict(test_X))
+		# vote the results
+		predMat = np.array(self.predictions_)
+		result = np.zeros(predMat.shape[1])
+		for i in xrange(predMat.shape[1]):
+			temp = np.bincount(predMat[:,i])
+			# if all disagree with each other, vote for the first classifier
+			if np.max(temp) == 1:
+				result[i] = predMat[0,i]
+			else:
+				result[i] = np.argmax(temp)
+		return result, predMat
