@@ -3,6 +3,14 @@ import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+from sklearn import svm,cross_validation,tree,linear_model,preprocessing,metrics
+from sklearn.mixture import GMM
+from sklearn.grid_search import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
+from sklearn.linear_model import LogisticRegression,SGDClassifier
+from sklearn.naive_bayes import GaussianNB,BernoulliNB
 
 class Processor:
 
@@ -48,20 +56,19 @@ class Processor:
 				data[column] = ( data[column] - mu[column] ) / sigma[column]
 		return data
 
-class EnsembleClassifier:
+class EnsembleClassifier(object):
 	def __init__(self, clfs=None):
 		self.clfs = clfs;
 
 	def fit(self, train_X, train_y):
 		for clf in self.clfs:
 			clf.fit(train_X, train_y)
-		return self
 
 	def predict(self, test_X):
-		self.predictions_ = list()
+		self.predictions_ = []
 		for clf in self.clfs:
 			try:
-				self.predictions_.append(clf.best_estimator_.predict(test_X))
+				self.predictions_.append(clf.best_estimator_.predict(testX))
 			except:
 				self.predictions_.append(clf.predict(test_X))
 		# vote the results
@@ -74,4 +81,4 @@ class EnsembleClassifier:
 				result[i] = predMat[0,i]
 			else:
 				result[i] = np.argmax(temp)
-		return result, predMat
+		return result
